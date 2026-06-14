@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AliaScale Settings</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="settings-page">
+    <main class="settings-window standalone">
+      <div class="settings-head">
+        <h1>SETTINGS</h1>
+      </div>
+
+      <nav class="settings-tabs" aria-label="settings tabs">
+        <button class="settings-tab active" data-tab="general" type="button">一般</button>
+        <button class="settings-tab" data-tab="backup" type="button">バックアップ</button>
+        <button class="settings-tab" data-tab="display" type="button">ディスプレイ</button>
+      </nav>
+
+      <section class="settings-tab-panel active" data-tab-panel="general">
+        <h2>FILES</h2>
+        <label class="field compact-field setting-field" data-tip="wav名変更の許可範囲です。自動編集あり、手動編集のみ、編集禁止から選びます。自動編集対象はREWRITEの編集スコープに従います。">
+          <span>wav編集</span>
+          <select id="wav-edit-mode">
+            <option value="allow">自動編集あり</option>
+            <option value="manual_only">手動編集のみ</option>
+            <option value="disabled">編集を許可しない</option>
+          </select>
+        </label>
+        <label class="field compact-field setting-field" data-tip="エイリアス変更の許可範囲です。自動編集あり、手動編集のみ、編集禁止から選びます。">
+          <span>エイリアス編集</span>
+          <select id="alias-edit-mode">
+            <option value="allow">自動編集あり</option>
+            <option value="manual_only">手動編集のみ</option>
+            <option value="disabled">編集を許可しない</option>
+          </select>
+        </label>
+        <label class="field compact-field setting-field" data-tip="自動編集と呼び出し保証の両方から除外する発音です。既定値は _ です。カンマ区切りで指定します。">
+          <span>無効発音</span>
+          <input id="excluded-call-key-moras" value="_" />
+        </label>
+        <label class="field compact-field setting-field" data-tip="通し番号や重複回避番号をエイリアスとwav名へどう割り当てるかを指定します。">
+          <span>通し番号</span>
+          <select id="numbering-order-mode">
+            <option value="separate">エイリアスとwavでそれぞれ付与</option>
+            <option value="alias_wav">エイリアス→wav</option>
+            <option value="wav_alias">wav→エイリアス</option>
+          </select>
+        </label>
+        <label data-tip="手動編集や手動並べ替えのあと、Preview実行時点で自動編集対象だった欄だけを現在のPreview表順で再番号付けします。手動編集済み欄、除外、無効発音に該当する欄は対象外です。">
+          <input id="renumber-after-order-change" type="checkbox" checked />
+          手動編集後に通し番号を再集計する
+        </label>
+        <label class="field compact-field setting-field" data-tip="wav名変更時に一緒にrenameする関連ファイルのパターンです。{stem}=拡張子なしwav名です。*は任意の0文字以上に一致します。">
+          <span>関連ファイル</span>
+          <input id="related-file-patterns" value="{stem}_wav.frq, {stem}.wav.llsm, {stem}_wav.pmk, {stem}*.hifi.npz" />
+        </label>
+        <label data-tip="UST検索時にUTAUのsetting.iniを読み、%VOICE%・*音源名・個別登録音源を使って音源を厳密に区別します。通常はOFFで十分です。">
+          <input id="strict-voice-match" type="checkbox" />
+          音源を厳密に区別する
+        </label>
+        <label class="field compact-field setting-field" data-tip="厳密な音源区別に使うutau.exeです。同じ階層のsetting.iniからVoiceRootとOtoListを読みます。">
+          <span>utau.exe</span>
+          <input id="utau-exe-path" placeholder="utau.exeを選択" disabled />
+          <button id="utau-exe-browse" type="button" disabled>参照</button>
+        </label>
+        <label data-tip="非推奨です。ONにするとdanger警告が残っていても、Apply時の確認ダイアログでYesを押した場合のみ適用できます。">
+          <input id="ignore-danger-warnings" type="checkbox" />
+          (非推奨)警告を無視して変更を適用
+        </label>
+        <label data-tip="選択中のUST群で使用回数が0の行に限り、呼び出し不可によるApplyブロックをwarningへ緩和します。未検索や古いUST結果では使用しないでください。">
+          <input id="relax-unused-cannotcall" type="checkbox" />
+          UST未使用行の呼び出し不可を緩和
+        </label>
+        <label data-tip="Apply時にlogsフォルダへデバッグ用ログを書き出します。警告行、リネーム失敗、例外情報を中心に記録します。">
+          <input id="write-debug-log" type="checkbox" checked />
+          (デバッグ用)ログを書き出す
+        </label>
+      </section>
+
+      <section class="settings-tab-panel" data-tab-panel="backup">
+        <h2>BACKUP</h2>
+        <label><input id="backup-enabled" type="checkbox" checked /> Apply前にバックアップを作成する</label>
+        <label><input type="radio" name="backup" value="voice_dir" checked /> voiceフォルダ全体 + 変更UST</label>
+        <label><input type="radio" name="backup" value="oto_only" /> oto.ini + 変更USTのみ</label>
+        <div class="backup-limit-row">
+          <label data-tip="次回Apply時、AliaScaleが作成したbackupフォルダが最大件数を超えていれば古い順に削除します。">
+            <input id="backup-limit-enabled" type="checkbox" />
+            最大件数
+          </label>
+          <div class="number-stepper">
+            <button id="backup-count-down" type="button">▼</button>
+            <input id="backup-max-count" value="30" inputmode="numeric" />
+            <button id="backup-count-up" type="button">▲</button>
+          </div>
+        </div>
+
+        <h2>CSV</h2>
+        <label><input id="write-csv" type="checkbox" checked /> Apply時にCSV記録を出力する</label>
+        <label><input id="csv-merge" type="checkbox" checked /> 既存CSVへ統合する</label>
+        <label class="field compact-field setting-field">
+          <span>出力先</span>
+          <select id="csv-output-mode">
+            <option value="default">既定</option>
+            <option value="custom">ファイル名を指定</option>
+          </select>
+        </label>
+        <label class="field csv-file-field setting-field" data-tip="ファイル名を指定する場合だけ編集できます。既定では音源名と実行時刻から自動決定します。">
+          <span>ファイル名</span>
+          <input id="csv-output-file" placeholder="voice/(音源名)/(音源名).csv に統合" disabled />
+          <button id="csv-output-browse" type="button" disabled>参照</button>
+        </label>
+      </section>
+
+      <section class="settings-tab-panel" data-tab-panel="display">
+        <h2>DISPLAY</h2>
+        <label class="field compact-field setting-field" data-tip="CSS寸法と文字サイズを変更します。変更後は必要最小ウィンドウサイズも再計算されます。">
+          <span>表示スケール</span>
+          <select id="ui-scale"></select>
+        </label>
+        <label class="field compact-field setting-field" data-tip="配色テーマです。現時点ではdarkが主実装です。">
+          <span>配色</span>
+          <select id="theme-mode">
+            <option value="defoko_dark">デフォ子(ダーク)</option>
+            <option value="defoko_light">デフォ子(ライト)</option>
+          </select>
+        </label>
+        <label data-tip="ONにすると、影響するUST一覧をファイル名ではなくフルパスで表示します。">
+          <input id="ust-full-path" type="checkbox" />
+          USTをフルパスで表示
+        </label>
+      </section>
+
+      <div class="settings-actions">
+        <button id="settings-ok">OK</button>
+        <button id="settings-cancel">キャンセル</button>
+      </div>
+    </main>
+
+    <div class="confirm-modal" id="confirm-modal" aria-hidden="true">
+      <div class="confirm-window">
+        <p>設定の変更を破棄しますか？</p>
+        <div class="confirm-actions">
+          <button id="confirm-ok">OK</button>
+          <button id="confirm-cancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+    <div class="tip-card" id="tip-card" aria-hidden="true"></div>
+    <script src="settings_window.js"></script>
+  </body>
+</html>
