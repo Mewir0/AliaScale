@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AliaScale INFORMATION</title>
+    <link rel="stylesheet" href="./information_detail.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>INFORMATION</h1>
+        <p id="window-state">Preview結果を読み込んでいます</p>
+      </div>
+      <button id="close-window" type="button">閉じる</button>
+    </header>
+
+    <nav class="tabs" aria-label="INFORMATION tabs">
+      <button class="active" type="button" data-tab="summary">音源概要</button>
+      <button type="button" data-tab="entry">エントリ</button>
+      <button type="button" data-tab="mora">発音表</button>
+      <button type="button" data-tab="unresolved">oto.iniに無い歌詞</button>
+    </nav>
+
+    <main>
+      <section class="panel active" data-panel="summary">
+        <section class="voice-hero">
+          <div class="voice-title-row">
+            <h2 id="voice-name">-</h2>
+            <button id="open-voice-folder" type="button">原音フォルダを開く</button>
+          </div>
+          <p id="voice-path">-</p>
+        </section>
+
+        <section class="summary-grid">
+          <table class="info-table">
+            <tbody id="summary-table"></tbody>
+          </table>
+          <section class="pitch-block">
+            <div class="block-title">
+              <h3>音階分布</h3>
+              <span>C1 - B6</span>
+            </div>
+            <div class="pitch-chart-wrap">
+              <div class="pitch-y-axis" id="detail-pitch-y-axis"></div>
+              <div class="pitch-grid" id="detail-pitch-grid"></div>
+              <div class="pitch-chart" id="detail-pitch-chart"></div>
+              <div class="pitch-axis" id="detail-pitch-axis"></div>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section class="panel" data-panel="entry">
+        <section class="entry-wave-section">
+          <div class="entry-head">
+            <div>
+              <h2 id="entry-title">Preview表で行を選択してください</h2>
+              <p id="entry-subtitle">メインウィンドウの選択行に追従します</p>
+            </div>
+            <button id="entry-play" type="button">▶</button>
+          </div>
+          <div class="waveform" id="entry-waveform">
+            <div class="wave-bars" id="wave-bars"></div>
+            <svg class="pitch-curve" viewBox="0 0 1000 160" preserveAspectRatio="none" aria-hidden="true">
+              <polyline id="pitch-polyline" points=""></polyline>
+            </svg>
+          </div>
+          <div class="oto-values">
+            <div><span>offset</span><strong id="entry-offset">-</strong></div>
+            <div><span>consonant</span><strong id="entry-consonant">-</strong></div>
+            <div><span>blank</span><strong id="entry-cutoff">-</strong></div>
+            <div><span>preutterance</span><strong id="entry-preutterance">-</strong></div>
+            <div><span>overlap</span><strong id="entry-overlap">-</strong></div>
+          </div>
+        </section>
+
+        <section class="entry-detail-grid">
+          <section class="block">
+            <h3>RELATED FILES</h3>
+            <div class="scroll-table compact">
+              <table>
+                <thead><tr><th>旧名</th><th>新名</th></tr></thead>
+                <tbody id="related-files"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="block">
+            <h3>ENTRY INFORMATION</h3>
+            <table class="info-table dense">
+              <tbody id="entry-information"></tbody>
+            </table>
+          </section>
+          <section class="block">
+            <h3>USING UST</h3>
+            <div class="scroll-table compact">
+              <table>
+                <thead><tr><th>UST</th><th>回数</th></tr></thead>
+                <tbody id="using-ust"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section class="panel" data-panel="mora">
+        <div class="panel-head">
+          <div>
+            <h2>発音表</h2>
+            <p id="mora-summary">発音を選択してください</p>
+          </div>
+          <div class="segmented" id="heat-mode">
+            <button class="active" type="button" data-mode="alias">エイリアス数</button>
+            <button type="button" data-mode="usage">UST使用数</button>
+          </div>
+        </div>
+        <div class="mora-table" id="mora-table"></div>
+        <section class="block selected-pronoun">
+          <h3>SELECTED PRONOUN</h3>
+          <div class="scroll-table compact">
+            <table>
+              <thead><tr><th>エイリアス</th><th>wav</th><th>音階</th><th>使用</th></tr></thead>
+              <tbody id="mora-entries"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel" data-panel="unresolved">
+        <div class="panel-head">
+          <div>
+            <h2>oto.iniに無い歌詞</h2>
+            <p>USTに存在するが現在のoto.iniで解決できないLyricです</p>
+          </div>
+          <div class="count-label" id="unresolved-count">0/0</div>
+        </div>
+        <div class="scroll-table unresolved-table">
+          <table>
+            <thead><tr><th>Lyric</th><th>UST</th><th>位置</th></tr></thead>
+            <tbody id="unresolved-lyrics"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./information_detail.js"></script>
+  </body>
+</html>

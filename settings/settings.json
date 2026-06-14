@@ -1,0 +1,37 @@
+{
+  "alias_edit_mode": "allow",
+  "auto_wav_excluded_moras": [
+    "_"
+  ],
+  "backup": true,
+  "backup_max_count": 30,
+  "backup_max_count_enabled": false,
+  "backup_mode": "voice_dir",
+  "backup_root": "backup",
+  "block_on_danger": true,
+  "csv_path": "",
+  "excluded_call_key_moras": [
+    "_"
+  ],
+  "merge_csv": false,
+  "number_alias_before_wav": true,
+  "numbering_order_mode": "alias_wav",
+  "related_file_patterns": [
+    "{stem}_wav.frq",
+    "{stem}.wav.llsm",
+    "{stem}_wav.pmk",
+    "{stem}*.hifi.npz"
+  ],
+  "relax_cannotcall_for_unused_ust_entries": false,
+  "rename_files": true,
+  "renumber_after_order_change": true,
+  "show_full_ust_path": true,
+  "strict_voice_match": false,
+  "theme": "defoko_dark",
+  "ui_scale": 1.0,
+  "update_ust": false,
+  "utau_exe_path": "",
+  "wav_edit_mode": "allow",
+  "write_csv": true,
+  "write_debug_log": true
+}

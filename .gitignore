@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual env
+venv/
+.venv/
+
+# Secrets
+.env
+secrets.json
+*.pem
+
+# Output
+outputs/
+logs/
+
+#data
+data/
+**/private/
+backup/

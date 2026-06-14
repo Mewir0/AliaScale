@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AliaScale</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app compact-start">
+      <header class="topbar">
+        <div class="top-title">AliaScale</div>
+        <div class="top-subtitle">そこそこかしこい音素エディタ</div>
+      </header>
+      <aside class="left">
+        <div class="left-scroll">
+        <section class="setup">
+          <h2>SETUP</h2>
+          <label class="field" data-tip="処理対象のUTAU音源フォルダです。oto.iniとwavがあるフォルダを指定してください。">
+            <span>音源フォルダ</span>
+            <input id="voice-folder" value="" placeholder="音源フォルダを選択" />
+            <button id="browse-voice">参照</button>
+          </label>
+          <label class="field" data-tip="自動処理の種類です。">
+            <span>処理モード</span>
+            <select id="process-mode" class="rich-select">
+              <button class="select-button">
+                <!-- ここに選択済みのoptionの複製を表示 -->
+                <selectedcontent></selectedcontent>
+              </button>
+              <option value="pitch_append">
+                <span class="option-title">音階追記</span>
+                <small class="option-desc">各行のエイリアスや原音ファイル名にC, Gといった音階を付けます。</small>
+              </option>
+              <option value="numbering">
+                <span class="option-title">通し番号</span>
+                <small class="option-desc">同じ発音の音素をoto.ini内の上から順に番号付けします。</small>
+              </option>
+              <option value="rule_based">
+                <span class="option-title">ルールベース編集（高度）</span>
+                <small class="option-desc">変数を使ってエイリアスや原音ファイル名を組み立てます。</small>
+              </option>
+              <option value="replace">
+                <span class="option-title">置換</span>
+                <small class="option-desc">文字列または正規表現でエイリアス・原音ファイル名を置換します。</small>
+              </option>
+              <option value="csv">
+                <span class="option-title">CSVに従って変更</span>
+                <small class="option-desc">指定CSVのold_wav/old_aliasでoto.ini内を照合し、該当する行にnew_wavとnew_aliasを反映します。</small>
+              </option>
+              <option value="none">
+                <span class="option-title">オプション</span>
+                <small class="option-desc">手動編集や接尾辞削除などの為のモードです。エイリアスと原音ファイル名を自動生成しません。</small>
+              </option>
+            </select>
+          </label>
+          <label class="field" data-tip="音階の特定に使用する周波数表です。resampler、moresampler、TIPSに対応しています。">
+            <span>周波数表</span>
+            <select id="frequency-source">
+              <option value="frq">resampler(.frq)</option>
+              <option value="mrq">moresampler(.mrq)</option>
+              <option value="pmk">TIPS(.pmk)</option>
+              <option value="auto_f0">自動F0推定</option>
+            </select>
+          </label>
+        </section>
+        <section class="rewrite">
+          <div class="rule-options" data-mode-group="rule_based">
+            <label class="field compact-field" data-rule-scope-group="call_key" data-tip="呼び出しキー生成に使うルールです。$p, $m, $pm, $s, $a, $f, $n, $l, $mr, $pmr, $dを使えます。">
+              <span>名前を作成</span>
+              <input id="rule-call-key-template" placeholder="$p$m_$n" />
+            </label>
+            <label class="field compact-field" data-tip="エイリアス生成に使うルールです。$p, $m, $pm, $s, $a, $f, $n, $l, $mr, $pmr, $dを使えます。">
+              <span>エイリアスを作成</span>
+              <input id="rule-alias-template" placeholder="$p$m_$n" />
+            </label>
+            <label class="field compact-field" data-tip="原音ファイルの名前生成に使うルールです。元の拡張子を維持します。空欄なら自動変更しません。">
+              <span>wav名を作成</span>
+              <input id="rule-wav-template" placeholder="$m_$n" />
+            </label>
+            <div class="check-row">
+              <label data-tip="UTAUから呼び出されるキーだけを編集します。エイリアスがあればエイリアスを優先し、エイリアスとwav名の発音が異なる場合は両方を対象にします。"><input name="rule-scope" type="radio" value="call_key" checked /> 呼び出しキー</label>
+              <label data-tip="エイリアス用とwav名用の規則を別々に指定します。細かく制御したい場合はこちらを使います。"><input name="rule-scope" type="radio" value="alias_wav" /> エイリアス + wav名</label>
+            </div>
+          </div>
+          <div class="pitch-options" data-mode-group="pitch_append">
+            <div class="pitch-option-row">
+              <label class="field compact-field" data-tip="音階追記モードで使う丸め方です。全音はC,D,E,F,G,A,B指定と同義です。">
+                <span>丸め種類</span>
+                <select id="rounding-mode"><option value="semitone">半音</option><option value="whole_tone">全音</option><option value="key">キー指定</option><option value="explicit_notes">自由指定</option></select>
+              </label>
+              <label class="mini-field separator" data-tip="エイリアスと音階の間に入れる文字です。例: _, *, 空欄"><span>区切り</span><input id="separator" value="_" /></label>
+            </div>
+            <label class="field compact-field" data-tip="キー指定または自由指定の候補です。例: C#,G / C#3,G4">
+              <span>丸め候補</span>
+              <input id="rounding-candidates" placeholder="" disabled />
+            </label>
+          </div>
+          <div class="replacement-options" data-mode-group="replace">
+            <div class="replacement-rule">
+              <input data-replace="old" placeholder="置換前" />
+              <input data-replace="new" placeholder="置換後" />
+              <select data-replace="target"><option value="all">すべて</option><option value="alias">エイリアス</option><option value="wav">wav名</option><option value="call_key">呼び出しキー</option></select>
+              <label><input data-replace="regex" type="checkbox" /> 正規表現</label>
+            </div>
+          </div>
+          <label class="field" data-mode-group="csv" data-tip="CSVに従って変更するモードで使用します。">
+            <span>CSV</span>
+            <input id="csv-path" value="" placeholder="CSVファイルを選択" />
+            <button id="browse-csv">参照</button>
+          </label>
+          <label data-mode-group="csv" data-tip="読み込んだCSVのold/newを反転し、過去の変更を戻すように反映します。">
+            <input id="csv-invert" type="checkbox" />
+            CSV反転して読む
+          </label>
+          <div class="check-row csv-read-columns" data-mode-group="csv" data-tip="CSVから反映する列を選びます。">
+            <span>読み込む列</span>
+            <label><input name="csv-read-column" type="checkbox" value="new_wav" checked /> new_wav</label>
+            <label><input name="csv-read-column" type="checkbox" value="new_alias" checked /> new_alias</label>
+            <label><input name="csv-read-column" type="checkbox" value="new_order_id" checked /> new_order_id</label>
+          </div>
+
+          <section class="advanced-settings">
+            <div id="advanced-toggle" class="advanced-toggle" aria-expanded="false" aria-controls="advanced-content">
+              <h2>詳細設定</h2>
+              <span class="advanced-arrow">▾</span>
+            </div>
+            <div id="advanced-content" class="advanced-content" hidden>
+              <div class="pitch-options" data-mode-group="rule_based">
+                <div class="pitch-option-row">
+                  <label class="field compact-field" data-tip="ルールベース編集で使う丸め方です。全音はC,D,E,F,G,A,B指定と同義です。">
+                    <span>丸め種類</span>
+                    <select id="rule-rounding-mode"><option value="semitone">半音</option><option value="whole_tone">全音</option><option value="key">キー指定</option><option value="explicit_notes">自由指定</option></select>
+                  </label>
+                </div>
+                <label class="field compact-field" data-tip="キー指定または自由指定の候補です。例: C#,G / C#3,G4">
+                  <span>丸め候補</span>
+                  <input id="rule-rounding-candidates" placeholder="" disabled />
+                </label>
+              </div>
+              <div data-mode-group="numbering">
+                <div class="rewrite-row numbering-row">
+                  <label class="mini-field separator" data-tip="エイリアスと通し番号の間に入れる文字です。"><span>区切り</span><input id="separator-numbering" value="_" /></label>
+                </div>
+              </div>
+              <label data-mode-group="numbering rule_based" data-tip="OFFの場合、各グループの1番目に相当する通し番号や$dは空文字として扱います。"><input id="number-first-alias" type="checkbox" /> 1番目にも1を付ける</label>
+              <div class="field compact-field" data-rewrite-common data-tip="呼び出しキー単位で整理するか、エイリアスとwav名を別々に整理するかを選びます。">
+                <span>編集スコープ</span>
+                <div class="check-row">
+                  <label><input name="edit-scope" type="radio" value="call_key" checked /> 呼び出しキー</label>
+                  <label><input name="edit-scope" type="radio" value="alias_wav" /> エイリアス + wav名</label>
+                </div>
+              </div>
+              <div class="check-row" data-rewrite-common>
+                <label data-tip="接頭辞を削除します。デフォルトではOFFで、接頭辞を保持します。"><input id="strip-prefix" type="checkbox" /> prefixを削除</label>
+                <label data-tip="既存エイリアスの末尾にある番号や音階などの接尾辞を削除してから新エイリアスを生成します。"><input id="strip-suffix" type="checkbox" checked /> suffixを削除</label>
+              </div>
+              <div class="check-row wide-first" data-rewrite-common>
+                <label data-tip="空エイリアス行へ、現在のwav名から拡張子を除いた名前を仮エイリアスとして付与してから、編集スコープと各モードの変換を判定します。"><input id="add-alias-unused" type="checkbox" /> 空エイリアスへエイリアス付与</label>
+                <label data-tip="新規エイリアス付与対象の原音ファイル名だけ、先頭に_を付けます。"><input id="prefix-underscore" type="checkbox" /> 原音名に「_」</label>
+              </div>
+              <section class="exclude">
+                <h2>EXCLUDE</h2>
+                <div class="check-row" data-tip="周波数や原音設定の状態に基づいて、自動編集しない行を選びます。">
+                  <label><input id="exclude-no-f0" type="checkbox" /> 無声音</label>
+                  <label><input id="exclude-no-freq-src" type="checkbox"/> 周波数表なし</label>
+                  <label><input id="exclude-empty-params" type="checkbox" checked /> 数値設定なし</label>
+                </div>
+                <div class="exclude-row">
+                  <label class="field compact-field" data-tip="除外条件の指定方法です。文字列、正規表現、発音から選びます。">
+                    <span>方式</span>
+                    <select id="exclude-mode"><option value="none">除外設定を選ぶ</option><option value="string_list">文字列リスト</option><option value="regex">正規表現</option><option value="mora">発音</option></select>
+                  </label>
+                  <label class="field compact-field" data-tip="除外パターンです。文字列リストと発音はカンマ区切り、正規表現はPython re相当です。">
+                    <span>条件</span>
+                    <input id="exclude-pattern" placeholder="_, R" />
+                  </label>
+                </div>
+              </section>
+              <section class="sort">
+                <h2>SORT</h2>
+                <div class="sort-chips" data-tip="項目名側をクリックした順に1,2,3の優先順位が付きます。もう一度クリックすると解除され、他の順位が繰り上がります。">
+                  <div class="sort-chip-row">
+                    <button class="sort-chip" data-key="mora"><span class="rank"></span><span>発音</span><span class="arrow" title="昇順/降順">↓</span></button>
+                    <button class="sort-chip" data-key="prefix"><span class="rank"></span><span>prefix</span><span class="arrow" title="昇順/降順">↓</span></button>
+                    <button class="sort-chip" data-key="suffix"><span class="rank"></span><span>suffix</span><span class="arrow" title="昇順/降順">↓</span></button>
+                  </div>
+                  <div class="sort-chip-row">
+                    <button class="sort-chip" data-key="filename"><span class="rank"></span><span>ファイル名</span><span class="arrow" title="昇順/降順">↓</span></button>
+                    <button class="sort-chip" data-key="alias"><span class="rank"></span><span>エイリアス</span><span class="arrow" title="昇順/降順">↓</span></button>
+                  </div>
+                  <div class="sort-chip-row">
+                    <button class="sort-chip" data-key="pitch"><span class="rank"></span><span>音階</span><span class="arrow" title="昇順/降順">↓</span></button>
+                    <button class="sort-chip" data-key="usage"><span class="rank"></span><span>使用頻度</span><span class="arrow" title="昇順/降順">↓</span></button>
+                    <button class="sort-chip" data-key="old_order"><span class="rank"></span><span>旧oto順</span><span class="arrow" title="昇順/降順">↓</span></button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </section>
+        <section class="ust">
+          <h2>UST</h2>
+          <label class="field" data-tip="USTを検索するフォルダです。Preview時に対象USTを列挙します。">
+            <span>検索フォルダ</span>
+            <input id="ust-folder" value="" placeholder="UST検索フォルダを選択" />
+            <button id="browse-ust">参照</button>
+          </label>
+          <label data-tip="ONの場合のみ、選択されたUSTのLyricを変更後aliasへ更新します。"><input id="ust-rewrite" type="checkbox" /> USTを書き換える</label>
+          <div class="ust-list" aria-label="影響するUST">
+          </div>
+        </section>
+        </div>
+        <footer>
+          <button class="icon-button" id="settings-button" data-tip="設定ウィンドウを開きます。"><img src="../assets/icon.png" alt="" /> </button>
+          <button class="primary" id="preview-button" data-tip="現在の左ペイン設定でPreview表を生成します。">Preview</button>
+          <button id="apply-button" data-tip="Previewで確定した内容を実ファイルへ反映します。" disabled>Apply</button>
+        </footer>
+      </aside>
+      <section class="right">
+        <div class="preview-head">
+          <h1>PREVIEW</h1>
+          <span id="summary">0 rows / 0 edits / 0 warnings</span>
+          <button id="sort-order-button" data-tip="Preview表を手動並べ替えモードにします。">並べ替え</button>
+          <div class="sort-order-actions" id="sort-order-actions" hidden>
+            <button id="sort-order-ok">OK</button>
+            <button id="sort-order-cancel">キャンセル</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="preview-loading" id="preview-loading" aria-hidden="true">
+            <div class="spinner"></div>
+            <span>Loading preview...</span>
+          </div>
+          <div class="table-scroll">
+            <table id="preview">
+              <colgroup>
+                <col class="op-col" />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="op"></th>
+                  <th>旧ファイル名</th>
+                  <th>新ファイル名</th>
+                  <th>元エイリアス</th>
+                  <th>新エイリアス</th>
+                  <th>状態</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <section class="info">
+          <div>
+            <h2>INFORMATION</h2>
+            <p>voice: example / wav: 128 / aliases: 214 / frequency: C1-B6</p>
+            <div class="pitch-chart" id="pitch-chart" aria-label="C1からB6までの半音別alias数"></div>
+          </div>
+          <button id="play">▶</button>
+        </section>
+        <section class="log">
+          <h2>LOG</h2>
+          <p id="bridge-status">Bridge: static fallback</p>
+          <p>Warnings are shown in the table.</p>
+        </section>
+      </section>
+    </main>
+    <div class="settings-modal" id="settings-modal" aria-hidden="true">
+      <div class="settings-window">
+        <div class="settings-head">
+          <h1>SETTINGS</h1>
+        </div>
+        <section>
+          <h2>FILES</h2>
+          <label class="field compact-field setting-field" data-tip="wav名変更の許可範囲です。自動編集あり、手動編集のみ、編集禁止から選びます。自動編集対象はREWRITEの編集スコープに従います。">
+            <span>wav編集</span>
+            <select id="wav-edit-mode"><option value="allow">自動編集あり</option><option value="manual_only">手動編集のみ</option><option value="disabled">編集を許可しない</option></select>
+          </label>
+          <label class="field compact-field setting-field" data-tip="エイリアス変更の許可範囲です。自動編集あり、手動編集のみ、編集禁止から選びます。">
+            <span>エイリアス編集</span>
+            <select id="alias-edit-mode"><option value="allow">自動編集あり</option><option value="manual_only">手動編集のみ</option><option value="disabled">編集を許可しない</option></select>
+          </label>
+          <label class="field compact-field setting-field" data-tip="呼び出し保証の対象外にする発音です。初期値は_です。カンマ区切りで指定します。">
+            <span>無効発音</span>
+            <input id="excluded-call-key-moras" value="_" />
+          </label>
+        </section>
+        <section>
+          <h2>DISPLAY</h2>
+          <label class="field compact-field setting-field" data-tip="表示する大きさを変更します。">
+            <span>表示スケール</span>
+            <select id="ui-scale"><option value="0.9">90%</option><option value="1" selected>100%</option><option value="1.1">110%</option></select>
+          </label>
+        </section>
+        <section>
+          <h2>BACKUP</h2>
+          <label><input id="backup-enabled" type="checkbox" checked /> Apply前にバックアップを作成する</label>
+          <label><input type="radio" name="backup" value="voice_dir" checked /> voiceフォルダ全体 + 変更UST</label>
+          <label><input type="radio" name="backup" value="oto_only" /> oto.ini + 変更USTのみ</label>
+          <div class="backup-limit-row">
+            <label data-tip="次回Apply時、AliaScaleが作成したbackupフォルダが最大件数を超えていれば古い順に削除します。"><input id="backup-limit-enabled" type="checkbox" /> 最大件数</label>
+            <div class="number-stepper">
+              <button id="backup-count-down" type="button">▼</button>
+              <input id="backup-max-count" value="30" inputmode="numeric" />
+              <button id="backup-count-up" type="button">▲</button>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h2>CSV</h2>
+          <label><input id="write-csv" type="checkbox" checked /> Apply時にCSV記録を出力する</label>
+          <label><input id="csv-merge" type="checkbox" checked /> 既存CSVへ統合する</label>
+          <label class="field compact-field setting-field"><span>出力先</span><select id="csv-output-mode"><option>規定</option><option>ファイル名を指定</option></select></label>
+          <label class="field csv-file-field setting-field" data-tip="ファイル名を指定する場合だけ編集できます。規定では音源名と実行時刻から自動決定します。">
+            <span>ファイル名</span>
+            <input id="csv-output-file" placeholder="voice/(音源名)/(音源名).csv に統合" disabled />
+            <button id="csv-output-browse" type="button" disabled>参照</button>
+          </label>
+        </section>
+        <section>
+          <h2>UST</h2>
+          <label data-tip="ONにすると、影響するUST一覧をファイル名ではなくフルパスで表示します。"><input id="ust-full-path" type="checkbox" /> USTをフルパスで表示</label>
+        </section>
+        <div class="settings-actions">
+          <button id="settings-ok">OK</button>
+          <button id="settings-cancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+    <div class="window-blocker" id="window-blocker" aria-hidden="true"></div>
+    <div class="confirm-modal" id="confirm-modal" aria-hidden="true">
+      <div class="confirm-window">
+        <div class="confirm-message" id="confirm-message">設定の変更を破棄しますか？</div>
+        <div class="confirm-actions">
+          <button id="confirm-ok">OK</button>
+          <button id="confirm-cancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+    <div class="tip-card" id="tip-card" aria-hidden="true"></div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
