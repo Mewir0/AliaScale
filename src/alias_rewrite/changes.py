@@ -322,13 +322,14 @@ def build_oto_update_maps_from_changes(
     changes: Iterable[ChangeRow],
     *,
     prefer_line_number: bool = True,
+    skip_noop: bool = True,
 ) -> tuple[dict[int, str], dict[int, str], list[CsvApplyResult]]:
     alias_by_line: dict[int, str] = {}
     wav_by_line: dict[int, str] = {}
     results: list[CsvApplyResult] = []
 
     for change in changes:
-        if not change.changed and _is_noop(change):
+        if skip_noop and not change.changed and _is_noop(change):
             results.append(CsvApplyResult(change, "skipped", None, "change row is marked unchanged"))
             continue
         result = _find_target_line(lines, change, prefer_line_number=prefer_line_number)

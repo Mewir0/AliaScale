@@ -64,7 +64,6 @@ function collectSettings() {
       .map((item) => item.trim())
       .filter(Boolean),
     numbering_order_mode: document.querySelector("#numbering-order-mode")?.value || "separate",
-    number_alias_before_wav: (document.querySelector("#numbering-order-mode")?.value || "separate") === "alias_wav",
     renumber_after_order_change: document.querySelector("#renumber-after-order-change")?.checked ?? true,
     related_file_patterns: csvText(document.querySelector("#related-file-patterns")?.value || "{stem}_wav.frq, {stem}.wav.llsm, {stem}_wav.pmk, {stem}*.hifi.npz")
       .split(",")
@@ -94,7 +93,7 @@ function applySettings(settings = {}) {
   setValue("#theme-mode", settings.theme || "defoko_dark");
   setValue("#ui-scale", String(settings.ui_scale || 1));
   setValue("#excluded-call-key-moras", csvText(settings.excluded_call_key_moras || "_"));
-  setValue("#numbering-order-mode", settings.numbering_order_mode || (settings.number_alias_before_wav ? "alias_wav" : "separate"));
+  setValue("#numbering-order-mode", settings.numbering_order_mode || "separate");
   setChecked("#renumber-after-order-change", settings.renumber_after_order_change ?? true);
   setValue("#related-file-patterns", csvText(settings.related_file_patterns || "{stem}_wav.frq, {stem}.wav.llsm, {stem}_wav.pmk, {stem}*.hifi.npz"));
   document.documentElement.style.setProperty("--ui-scale", String(settings.ui_scale || 1));

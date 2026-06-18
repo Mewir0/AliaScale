@@ -31,8 +31,6 @@ def _normalize_app_settings_data(data: dict) -> dict:
         data["theme"] = "defoko_light"
     if data.get("wav_edit_mode") in {"representative", "empty_alias_only"}:
         data["wav_edit_mode"] = "allow"
-    if "numbering_order_mode" not in data and data.get("number_alias_before_wav") is True:
-        data["numbering_order_mode"] = "alias_wav"
     if str(data.get("backup_root") or "").strip().lower() == "backups":
         data["backup_root"] = "backup"
     legacy_related = ("{stem}.frq", "{name}.llsm", "{stem}.hifi.npz")

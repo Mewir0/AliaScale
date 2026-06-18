@@ -67,7 +67,7 @@ function setUnappliedChanges(value, { syncSize = true } = {}) {
   hasUnappliedChanges = Boolean(value);
   window.aliascaleHasUnappliedChanges = hasUnappliedChanges;
   window.pywebview?.api?.set_unapplied_changes?.({ value: hasUnappliedChanges }).catch(() => {});
-  if (syncSize) syncWindowForPreviewState({ resizeToTarget: false }).catch(() => {});
+  if (syncSize) syncWindowForPreviewState({ debugReason: "unapplied-change-state", resizeToTarget: false }).catch(() => {});
 }
 
 function setPreviewStale(value) {
@@ -243,6 +243,7 @@ async function syncPreviewVisibilityTransition(previousHasRows, nextHasRows) {
   if (!changed) return;
   await nextFrame();
   await syncWindowForPreviewState({
+    debugReason: "preview-visibility-transition",
     resizeBelowMinimumOnly: true,
     hasPreviewRows: nextVisible,
     showPreviewPane: nextVisible,
@@ -256,6 +257,7 @@ async function showPreviewPaneForLoading() {
     await nextFrame();
   }
   await syncWindowForPreviewState({
+    debugReason: "preview-loading",
     resizeBelowMinimumOnly: true,
     hasPreviewRows: true,
     showPreviewPane: true,
@@ -285,6 +287,7 @@ function geometryForPreviewState(leftSize, { hasPreviewRows = hasPreviewRowsInTa
 }
 
 async function syncWindowForPreviewState({
+  debugReason = "sync",
   resizeToTarget = false,
   resizeToTargetWidth = resizeToTarget,
   resizeToTargetHeight = resizeToTarget,
@@ -341,6 +344,27 @@ async function syncWindowForPreviewState({
     resize_to_target_width_if_below: resizeToTargetWidthIfBelow,
     resize_to_target_width: resizeToTargetWidth,
     resize_to_target_height: resizeToTargetHeight,
+    debug: {
+      reason: debugReason,
+      measured_left_size: measuredLeftSize,
+      compact_minimum_viewport: compactMinimumViewport,
+      left_size: leftSize,
+      geometry,
+      viewport,
+      scale: currentUiScale(),
+      flags: {
+        resize_to_target: resizeToTarget,
+        resize_to_target_width: resizeToTargetWidth,
+        resize_to_target_height: resizeToTargetHeight,
+        resize_below_minimum_only: resizeBelowMinimumOnly,
+        has_preview_rows: hasPreviewRows,
+        show_preview_pane: showPreviewPane,
+        refresh_compact_height: refreshCompactHeight,
+        preserve_current_height: preserveCurrentHeight,
+        resize_to_target_width_if_below: resizeToTargetWidthIfBelow,
+        resize_to_minimum_height: resizeToMinimumHeight,
+      },
+    },
   });
 }
 
@@ -1298,6 +1322,7 @@ window.applyAliaScaleSettings = async (settings = {}) => {
   if (!scaleChanged) return;
   setPreviewPaneVisible(previewPaneVisible);
   await syncWindowForPreviewState({
+    debugReason: "settings-scale",
     resizeToTarget: !previewPaneVisible,
     resizeBelowMinimumOnly: previewPaneVisible,
     hasPreviewRows: previewPaneVisible || rowsForApply().length > 0,
@@ -1345,6 +1370,7 @@ await initializePersistedSettings();
 await initializeColorSchemes();
 setPreviewPaneVisible(false);
 await syncWindowForPreviewState({
+  debugReason: "startup",
   resizeToTarget: true,
   hasPreviewRows: false,
   showPreviewPane: false,

@@ -4,7 +4,7 @@
     "_"
   ],
   "backup": true,
-  "backup_max_count": 30,
+  "backup_max_count": 10,
   "backup_max_count_enabled": false,
   "backup_mode": "voice_dir",
   "backup_root": "backup",
@@ -14,7 +14,6 @@
     "_"
   ],
   "merge_csv": false,
-  "number_alias_before_wav": true,
   "numbering_order_mode": "alias_wav",
   "related_file_patterns": [
     "{stem}_wav.frq",

@@ -4,10 +4,10 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pywebview = "*"
 nuitka = "*"
 ordered-set = "*"
 zstandard = "*"
+pywebview = "==5.4"
 
 [dev-packages]
 

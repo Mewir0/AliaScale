@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from dataclasses import asdict
 import json
 from pathlib import Path
@@ -40,6 +41,7 @@ from .dto import (
 )
 from .settings_store import load_app_settings, save_app_settings
 from .theme_store import load_color_schemes
+from .runtime_paths import default_logs_dir
 
 
 # 依存ライブラリを処理する
@@ -74,6 +76,37 @@ _main_hwnd: int | None = None
 _main_old_wndproc = None
 _main_wndproc = None
 
+# ウィンドウリサイズ診断ログは通常OFF。
+# 一時的に有効化する場合はこの値を True にするか、
+# 環境変数 ALIASCALE_WINDOW_GEOMETRY_DEBUG=1 を指定する。
+_WINDOW_GEOMETRY_DEBUG_DEFAULT = False
+_window_geometry_debug_enabled = _WINDOW_GEOMETRY_DEBUG_DEFAULT
+
+
+# ウィンドウサイズ調整の診断ログを出力する
+def _set_window_geometry_debug_enabled(enabled: bool) -> None:
+    global _window_geometry_debug_enabled
+    _window_geometry_debug_enabled = bool(enabled)
+
+
+def _window_geometry_debug_log(event: str, **values: Any) -> None:
+    env_enabled = os.environ.get("ALIASCALE_WINDOW_GEOMETRY_DEBUG", "").lower() in {"1", "true", "yes", "on"}
+    if not (_window_geometry_debug_enabled or env_enabled):
+        return
+    try:
+        log_dir = default_logs_dir()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"aliascale_window_geometry_{datetime.now().strftime('%Y%m%d')}.log"
+        payload = {
+            "time": datetime.now().isoformat(timespec="milliseconds"),
+            "event": event,
+            **values,
+        }
+        with log_path.open("a", encoding="utf-8") as file:
+            file.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
+    except Exception:
+        pass
+
 
 # ウィンドウの親子関係を定義する
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -85,6 +118,7 @@ MONITOR_DEFAULTTONEAREST = 0x00000002
 
 SWP_NOSIZE = 0x0001
 SWP_NOMOVE = 0x0002
+SWP_NOZORDER = 0x0004
 SWP_NOACTIVATE = 0x0010
 SWP_SHOWWINDOW = 0x0040
 
@@ -473,6 +507,38 @@ def _main_window_metrics(window, current_width: int, current_height: int) -> tup
     return actual_width, actual_height, chrome_width, chrome_height
 
 
+# Win32 APIでメインウィンドウを直接リサイズする
+def _native_resize_window(hwnd: int | None, logical_width: int, logical_height: int) -> dict[str, Any]:
+    hwnd = _hwnd_value(hwnd)
+    if not hwnd:
+        return {"attempted": False, "ok": False, "reason": "missing_hwnd"}
+
+    physical_width, physical_height = _logical_to_physical_size(logical_width, logical_height, hwnd)
+    flags = SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW
+    ctypes.set_last_error(0)
+    ok = user32.SetWindowPos(
+        wintypes.HWND(hwnd),
+        wintypes.HWND(0),
+        0,
+        0,
+        int(physical_width),
+        int(physical_height),
+        flags,
+    )
+    error = ctypes.get_last_error() if not ok else 0
+    return {
+        "attempted": True,
+        "ok": bool(ok),
+        "error": int(error),
+        "logical_width": int(logical_width),
+        "logical_height": int(logical_height),
+        "physical_width": int(physical_width),
+        "physical_height": int(physical_height),
+        "flags": int(flags),
+        "hwnd": int(hwnd),
+    }
+
+
 def _tuple_dataclass(cls, values: Any) -> tuple:
     if not values:
         return ()
@@ -506,8 +572,6 @@ def _app_settings(data: dict | None) -> AppSettings:
             data["backup_max_count"] = 30
     if data.get("wav_edit_mode") in {"representative", "empty_alias_only"}:
         data["wav_edit_mode"] = "allow"
-    if "numbering_order_mode" not in data and data.get("number_alias_before_wav") is True:
-        data["numbering_order_mode"] = "alias_wav"
     if str(data.get("backup_root") or "").strip().lower() == "backups":
         data["backup_root"] = "backup"
     if not str(data.get("backup_root") or "").strip():
@@ -918,6 +982,7 @@ class Api:
     # メインウィンドウの最小サイズと画面サイズを同期
     def sync_main_window_geometry(self, payload: dict | None = None) -> bool:
         data = payload or {}
+        _window_geometry_debug_log("sync_main_window_geometry_payload", payload=data)
         return _resize_main(
             int(data.get("current_width") or 0),
             int(data.get("current_height") or 0),
@@ -930,6 +995,7 @@ class Api:
             resize_to_target_width_if_below=bool(data.get("resize_to_target_width_if_below", False)),
             resize_to_target_width=bool(data.get("resize_to_target_width", False)),
             resize_to_target_height=bool(data.get("resize_to_target_height", False)),
+            debug_context=data.get("debug") if isinstance(data.get("debug"), dict) else None,
         )
 
     # 設定ウィンドウを処理する
@@ -1254,6 +1320,7 @@ def _resize_main(
     resize_to_target_width_if_below: bool = False,
     resize_to_target_width: bool = False,
     resize_to_target_height: bool = False,
+    debug_context: dict[str, Any] | None = None,
 ) -> bool:
     global _main_min_size
     try:
@@ -1281,6 +1348,7 @@ def _resize_main(
             target_window_width = min(target_window_width, work_width)
         if work_height:
             target_window_height = min(target_window_height, work_height)
+        initial_resize_to_target_width = resize_to_target_width
         if resize_to_target_width_if_below:
             resize_to_target_width = actual_width < target_window_width
         target_width = target_window_width if resize_to_min_width or resize_to_target_width else max(actual_width, min_window_width)
@@ -1291,9 +1359,63 @@ def _resize_main(
             target_height = min(target_height, work_height)
         needs_width = actual_width < min_window_width
         needs_height = actual_height < min_window_height and (resize_to_min_height or resize_to_target_height)
-        if needs_width or needs_height or resize_to_min_height or resize_to_min_width or resize_to_target_width or resize_to_target_height:
+        resize_called = needs_width or needs_height or resize_to_min_height or resize_to_min_width or resize_to_target_width or resize_to_target_height
+        _window_geometry_debug_log(
+            "resize_main_decision",
+            debug=debug_context or {},
+            current_width=current_width,
+            current_height=current_height,
+            actual_width=actual_width,
+            actual_height=actual_height,
+            chrome_width=chrome_width,
+            chrome_height=chrome_height,
+            min_width=min_width,
+            min_height=min_height,
+            min_window_width=min_window_width,
+            min_window_height=min_window_height,
+            requested_target_width=requested_target_width,
+            requested_target_height=requested_target_height,
+            target_window_width=target_window_width,
+            target_window_height=target_window_height,
+            target_width=target_width,
+            target_height=target_height,
+            work_width=work_width,
+            work_height=work_height,
+            resize_to_min_width=resize_to_min_width,
+            resize_to_min_height=resize_to_min_height,
+            resize_to_target_width_if_below=resize_to_target_width_if_below,
+            initial_resize_to_target_width=initial_resize_to_target_width,
+            resize_to_target_width=resize_to_target_width,
+            resize_to_target_height=resize_to_target_height,
+            needs_width=needs_width,
+            needs_height=needs_height,
+            resize_called=resize_called,
+        )
+        if resize_called:
             window.resize(target_width, target_height)
-    except Exception:
+            native_resize = _native_resize_window(hwnd, target_width, target_height)
+            _window_geometry_debug_log(
+                "resize_main_resize_called",
+                debug=debug_context or {},
+                target_width=target_width,
+                target_height=target_height,
+                native_resize=native_resize,
+            )
+            post_actual_width, post_actual_height, post_chrome_width, post_chrome_height = _main_window_metrics(
+                window,
+                current_width,
+                current_height,
+            )
+            _window_geometry_debug_log(
+                "resize_main_after_resize",
+                debug=debug_context or {},
+                actual_width=post_actual_width,
+                actual_height=post_actual_height,
+                chrome_width=post_chrome_width,
+                chrome_height=post_chrome_height,
+            )
+    except Exception as exc:
+        _window_geometry_debug_log("resize_main_error", debug=debug_context or {}, error=repr(exc))
         return False
     return True
 

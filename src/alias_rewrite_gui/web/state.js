@@ -114,8 +114,7 @@ export function collectSettings() {
     ui_scale: Number.parseFloat(value("#ui-scale", String(storedSettings.ui_scale || 1))) || 1,
     excluded_call_key_moras: csvList(value("#excluded-call-key-moras", csvText(storedSettings.excluded_call_key_moras || "_"))),
     auto_wav_excluded_moras: csvList(value("#excluded-call-key-moras", csvText(storedSettings.excluded_call_key_moras || "_"))),
-    numbering_order_mode: value("#numbering-order-mode", storedSettings.numbering_order_mode || (storedSettings.number_alias_before_wav ? "alias_wav" : "separate")),
-    number_alias_before_wav: value("#numbering-order-mode", storedSettings.numbering_order_mode || (storedSettings.number_alias_before_wav ? "alias_wav" : "separate")) === "alias_wav",
+    numbering_order_mode: value("#numbering-order-mode", storedSettings.numbering_order_mode || "separate"),
     renumber_after_order_change: checked("#renumber-after-order-change", storedSettings.renumber_after_order_change ?? true),
     write_debug_log: checked("#write-debug-log", storedSettings.write_debug_log ?? true),
     related_file_patterns: csvList(value("#related-file-patterns", csvText(storedSettings.related_file_patterns || "{stem}_wav.frq, {stem}.wav.llsm, {stem}_wav.pmk, {stem}*.hifi.npz"))),
@@ -166,7 +165,7 @@ export function applySettingsToDom(settings = {}) {
   setValue("#theme-mode", settings.theme || "defoko_dark");
   setValue("#ui-scale", String(settings.ui_scale || 1));
   setValue("#excluded-call-key-moras", csvText(settings.excluded_call_key_moras || "_"));
-  setValue("#numbering-order-mode", settings.numbering_order_mode || (settings.number_alias_before_wav ? "alias_wav" : "separate"));
+  setValue("#numbering-order-mode", settings.numbering_order_mode || "separate");
   setChecked("#renumber-after-order-change", settings.renumber_after_order_change ?? true);
   setValue("#related-file-patterns", csvText(settings.related_file_patterns || "{stem}_wav.frq, {stem}.wav.llsm, {stem}_wav.pmk, {stem}*.hifi.npz"));
   document.documentElement.style.setProperty("--ui-scale", String(settings.ui_scale || 1));

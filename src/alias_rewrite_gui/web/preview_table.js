@@ -20,7 +20,7 @@ export function setRowPlayCallback(callback) {
 }
 
 export function rowsForApply() {
-  return currentRows.map(stripClientOnlyFields);
+  return currentRows.map((row, index) => stripClientOnlyFields({ ...row, new_order_id: index + 1 }));
 }
 
 export function previewRowsSnapshot() {

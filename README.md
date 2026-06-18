@@ -2,7 +2,7 @@
 
 ![Release](https://img.shields.io/github/v/release/Mewir0/AliaScale?include_prereleases&display_name=release&style=for-the-badge&logo=github&color=d7abe4
 )
-[![License](https://img.shields.io/badge/license-MIT-fbd5e3?style=for-the-badge)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-MIT-fbd5e3?style=for-the-badge)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%20-a5a5d4?style=for-the-badge)
 ![Downloads](https://img.shields.io/github/downloads/Mewir0/AliaScale/total?style=for-the-badge&color=a0f2ed)
 
@@ -89,10 +89,5 @@ This project is licensed under the MIT License, see the LICENSE.txt file for det
 > 作者: 迷路 <br>
 Twitter(現X): @MeisIllust ([リンク](https://x.com/MeisIllust))<br>
 [匿名箱](<https://t.co/JVc6pCNlCF> )
-
-
-
-
-
 
 

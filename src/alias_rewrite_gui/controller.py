@@ -31,6 +31,7 @@ from alias_rewrite.files import build_file_rename_plan
 from alias_rewrite.log_apply import save_apply_log
 from alias_rewrite.options import WavEditMode, normalize_wav_edit_mode
 from alias_rewrite.pitch import FREQUENCY_ERROR_KEY, build_frequency_index, estimate_pitch_for_entry, find_frequency_record, load_frequency_records
+from alias_rewrite.retention import prune_files_older_than
 from alias_rewrite.warnings import has_blocking_warnings
 
 from .dto import (
@@ -45,6 +46,9 @@ from .dto import (
 )
 from .runtime_paths import default_logs_dir, default_settings_dir, resolve_app_path
 from .wav_utils import wav_duration_ms
+
+
+LOG_RETENTION_DAYS = 30
 
 
 # Load original oto entries for UST usage
@@ -128,7 +132,6 @@ def _preview_options(request: PreviewRequest) -> PreviewOptions:
         prefix_underscore_for_new_alias=rewrite.prefix_underscore_for_new_alias,
         key_warning_config=KeyWarningConfig(excluded_moras=request.settings.excluded_call_key_moras),
         auto_wav_excluded_moras=request.settings.excluded_call_key_moras,
-        number_alias_before_wav=request.settings.number_alias_before_wav,
         numbering_order_mode=request.settings.numbering_order_mode,
         renumber_after_order_change=request.settings.renumber_after_order_change,
         relax_cannotcall_for_unused_ust_entries=request.settings.relax_cannotcall_for_unused_ust_entries,
@@ -1001,6 +1004,7 @@ def apply(request: ApplyRequest) -> ApplyResponse:
     result = apply_changes_direct(request.voice_dir, request.oto_path, rows, options)
 
     log_path_str = ""
+    log_cleanup_warnings: list[str] = []
     if request.settings.write_debug_log:
         try:
             log_path = _apply_log_path(request)
@@ -1008,6 +1012,10 @@ def apply(request: ApplyRequest) -> ApplyResponse:
             log_path_str = str(log_path)
         except Exception:
             pass
+    try:
+        prune_files_older_than(default_logs_dir(), "aliascale_*.log", LOG_RETENTION_DAYS)
+    except OSError as exc:
+        log_cleanup_warnings.append(f"log cleanup failed: {exc}")
 
     return ApplyResponse(
         written_files=tuple(str(path) for path in result.written_files),
@@ -1015,7 +1023,7 @@ def apply(request: ApplyRequest) -> ApplyResponse:
         backups=tuple(str(backup.backup_path) for backup in result.backups),
         csv_path="" if result.csv_path is None else str(result.csv_path),
         log_path=log_path_str,
-        warnings=tuple(result.warnings),
+        warnings=tuple(result.warnings) + tuple(log_cleanup_warnings),
         skipped=tuple(result.skipped),
         errors=tuple(result.errors),
     )

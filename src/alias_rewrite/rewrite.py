@@ -119,7 +119,6 @@ class PreviewOptions:
     alias_edit_mode: str = WavEditMode.ALLOW.value
     prefix_underscore_for_new_alias: bool = False
     auto_wav_excluded_moras: tuple[str, ...] = ("_",)
-    number_alias_before_wav: bool = False
     numbering_order_mode: str = "separate"  # separate / alias_wav / wav_alias
     renumber_after_order_change: bool = True
     usage_count_by_line: dict[int, int] = field(default_factory=dict)
@@ -271,7 +270,7 @@ def _mora_is_allowed(mora: str, excluded_moras: tuple[str, ...]) -> bool:
 def _numbering_order_mode(options: PreviewOptions) -> str:
     if options.numbering_order_mode in {"separate", "alias_wav", "wav_alias"}:
         return options.numbering_order_mode
-    return "alias_wav" if options.number_alias_before_wav else "wav_alias"
+    return "separate"
 
 
 # 通し番号のフィールド優先順位を返す
@@ -2404,6 +2403,7 @@ def _preview_csv_changes(oto_path: str | Path, csv_path: str | Path, options: Pr
         lines,
         csv_changes,
         prefer_line_number=False,
+        skip_noop=False,
     )
     matched_by_line = {result.line_number: result for result in results if result.line_number is not None}
 

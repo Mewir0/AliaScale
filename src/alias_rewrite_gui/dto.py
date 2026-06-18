@@ -89,7 +89,6 @@ class AppSettings:
     ui_scale: float = 1.0
     excluded_call_key_moras: tuple[str, ...] = ("_",)
     auto_wav_excluded_moras: tuple[str, ...] = ("_",)
-    number_alias_before_wav: bool = False
     numbering_order_mode: str = "separate"
     renumber_after_order_change: bool = True
     relax_cannotcall_for_unused_ust_entries: bool = False
